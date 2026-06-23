@@ -1,0 +1,40 @@
+name: Invoke API
+
+on:
+  schedule:
+    - cron: "32 */4 * * *"
+  workflow_dispatch:
+
+jobs:
+  invoke:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install Requirements
+        run: poetry install
+
+      - name: Test API
+        env:
+          PASSWD: ${{ secrets.PASSWD }}
+        run: bash routine.sh
+
+      - name: Commit And Push
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          bash reset.sh "Update App Config"
+          git config --unset-all http.https://github.com/.extraheader || true
+          git remote set-url origin "https://prism-w:${GH_PAT}@github.com/prism-w/KeepAliveE5.git"
+          git push -f origin master 2>&1
